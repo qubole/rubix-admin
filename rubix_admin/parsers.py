@@ -2,6 +2,7 @@ import argparse
 
 from rubix_admin import __version__
 from rubix_admin.installer import Installer
+from rubix_admin.daemon import Daemon
 
 
 def setup_parsers():
@@ -20,5 +21,6 @@ def setup_parsers():
 
     sub_parsers = argparser.add_subparsers()
     Installer.setup_parsers(sub_parsers)
+    Daemon.setup_parsers(sub_parsers)
 
     return config_parser, argparser

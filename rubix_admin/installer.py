@@ -1,7 +1,6 @@
 import logging
 
-from fabric.context_managers import settings, hide, shell_env
-from fabric.operations import sudo, put, os, local
+from fabric.operations import sudo, put, os
 from fabric.state import env
 from fabric.tasks import execute
 from fabric.utils import abort
