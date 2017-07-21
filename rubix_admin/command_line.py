@@ -1,25 +1,11 @@
 #!/bin/env python
 
-import ConfigParser
 import os
 import sys
 import traceback
 import logging
 from parsers import setup_parsers
-
-
-def load_config(config_args):
-    config_candidates = []
-    config_candidates.append(os.path.expanduser("~/.radminrc"))
-    if config_args.config:
-        config_candidates.append(config_args.config)
-
-    config = ConfigParser.SafeConfigParser()
-    files_read = config.read(config_candidates)
-#    if len(files_read) == 0:
-#        logging.fatal("No configuration files found. Did you create ~/.radminrc ?")
-#        sys.exit(3)
-    return config
+from rubix_admin.admin_config import AdminConfig
 
 
 def main():
@@ -38,8 +24,9 @@ def main():
     config_parser, argparser = setup_parsers()
 
     config_args, remaining_argv = config_parser.parse_known_args()
-    config = load_config(config_args)
+    config = AdminConfig.load_config(config_args)
 
+    print config
     args, remaining_argv = argparser.parse_known_args(remaining_argv)
     args.remaining_argv = remaining_argv
 
