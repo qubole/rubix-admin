@@ -17,15 +17,15 @@ class Installer:
 
         cls.install_parser = cls.sub_parser.add_parser("install",
                                                        help="Install from RPM")
-        cls.install_parser.add_argument("-r", "--rpm", required=True,
-                                        help="Path to RPM file")
+        cls.install_parser.add_argument("-r", "--rpm", nargs='+', required=True,
+                                        help="Path to RPM file(s)")
         cls.install_parser.add_argument("-a", "--rpm-args", default="--ignoreos",
                                         help="Arguments to rpm command")
         cls.install_parser.set_defaults(func=cls.install_cmd)
 
     @classmethod
     def install_cmd(cls, args):
-        logging.info("Installing %s" % args.rpm)
+        logging.info("Installing packages %s" % args.rpm)
         return execute(cls.install, args, hosts=args.config["hosts"])
 
     @classmethod
@@ -37,25 +37,28 @@ class Installer:
     @classmethod
     def _scp(cls, args):
         remote_packages_path = args.config["remote_packages_path"]
-        if not os.path.isfile(args.rpm):
-            abort('RPM file not found at %s.' % args.rpm)
+        for rpm in args.rpm:
+            if not os.path.isfile(rpm):
+                abort('RPM file not found at %s.' % rpm)
 
-        logging.info("Deploying rpm on %s" % env.host)
-        sudo('mkdir -p ' + remote_packages_path)
-        ret_list = put(args.rpm, remote_packages_path, use_sudo=True)
-        if not ret_list.succeeded:
-            logging.warn("Failure during put. Now using /tmp as temp dir")
-            ret_list = put(args.rpm, remote_packages_path,
-                           use_sudo=True, temp_dir='/tmp')
-        if ret_list.succeeded:
-            logging.info("Package deployed successfully on: %s " % env.host)
+            logging.info("Deploying rpm on %s" % env.host)
+            sudo('mkdir -p ' + remote_packages_path)
+            ret_list = put(rpm, remote_packages_path, use_sudo=True)
+            if not ret_list.succeeded:
+                logging.warn("Failure during put. Now using /tmp as temp dir")
+                ret_list = put(rpm, remote_packages_path,
+                               use_sudo=True, temp_dir='/tmp')
+            if ret_list.succeeded:
+                logging.info("Package deployed successfully on: %s " % env.host)
 
     @classmethod
     def _rpm_install(cls, args):
-         sudo('rpm -U %s %s' %
+         for rpm in args.rpm:
+             logging.info("Installing package %s" % rpm)
+             sudo('rpm -U %s %s' %
                 (args.rpm_args,
                  os.path.join(args.config["remote_packages_path"],
-                              os.path.basename(args.rpm))))
+                              os.path.basename(rpm))))
 
     @classmethod
     def _rubix_op(cls, args):
@@ -69,6 +72,7 @@ class Installer:
         while count < 5:
           sudo("mkdir -p /var/lib/rubix/cache/data%s" % count)
           count += 1
+        sudo("mkdir -p /usr/lib/presto/etc/catalog")
 
         append("/usr/lib/presto/etc/catalog/hive.properties","hive.fs.s3n.impl=com.qubole.rubix.presto.CachingPrestoS3FileSystem", True)
         append("/usr/lib/presto/etc/catalog/hive.properties","hive.fs.s3.impl=com.qubole.rubix.presto.CachingPrestoS3FileSystem", True)
