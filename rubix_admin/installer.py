@@ -77,4 +77,5 @@ class Installer:
         append("/usr/lib/presto/etc/catalog/hive.properties","hive.fs.s3n.impl=com.qubole.rubix.presto.CachingPrestoS3FileSystem", True)
         append("/usr/lib/presto/etc/catalog/hive.properties","hive.fs.s3.impl=com.qubole.rubix.presto.CachingPrestoS3FileSystem", True)
         append("/usr/lib/presto/etc/catalog/hive.properties","hive.fs.s3a.impl=com.qubole.rubix.presto.CachingPrestoS3FileSystem", True)
-        sudo("python /usr/lib/rubix/bin/configure.py")
+        sudo("chmod +x /usr/lib/rubix/bin/configure.sh")
+        sudo("/usr/lib/rubix/bin/configure.sh")
