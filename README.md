@@ -3,7 +3,7 @@
 # Installation
 `rubix-admin` should be installed on the cluster (Presto/Hadoop2) master
 
-    git clone https://github.com/vrajat/rubix-admin.git
+    git clone https://github.com/qubole/rubix-admin.git
     virtualenv venv
     source venv/bin/activate
     python setup.py install

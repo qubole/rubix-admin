@@ -13,7 +13,7 @@ setup(
     name="rubix_admin",
     version=versioneer.get_version(),
     cmdclass=versioneer.get_cmdclass(),
-    url = "https://github.com/vrajat/rubix_admin.git",
+    url = "https://github.com/qubole/rubix_admin.git",
     author="Qubole",
     author_email="dev@qubole.com",
     description="Admin tool for Qubole Rubix",
