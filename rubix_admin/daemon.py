@@ -24,18 +24,21 @@ class Daemon:
     @classmethod
     def start_cmd(cls, args):
         logging.info("Starting bookkeeper & lds")
-        return execute(cls.service, "start", hosts=args.config["hosts"])
+        execute(cls.service, "start", True, hosts=args.config["coordinator"])
+        return  execute(cls.service, "start", False, hosts=args.config["workers"])
 
     @classmethod
     def stop_cmd(cls, args):
         logging.info("Stoping bookkeeper & lds")
-        return execute(cls.service, "stop", hosts=args.config["hosts"])
+        execute(cls.service, "stop", True, hosts=args.config["coordinator"])
+        return execute(cls.service, "stop", False, hosts=args.config["workers"])
 
     @classmethod
     def restart_cmd(cls, args):
         logging.info("Starting bookkeeper & lds")
-        return execute(cls.service, "restart", hosts=args.config["hosts"])
+        execute(cls.service, "restart", True, hosts=args.config["coordinator"])
+        return execute(cls.service, "restart", False, hosts=args.config["workers"])
 
     @classmethod
-    def service(cls, action):
-        return sudo("/etc/init.d/rubix.service %s" % action)
+    def service(cls, action, is_master):
+        return sudo("/etc/init.d/rubix.service %s %s" % (action,is_master))
