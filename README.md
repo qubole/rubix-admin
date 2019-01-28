@@ -1,7 +1,7 @@
-# Admin Tool for Rubix
+# Admin Tool for RubiX
 
-# Installation
-`rubix-admin` should be installed on the cluster (Presto/Hadoop2) master
+## Installation
+`rubix-admin` should be installed on the cluster (Presto/Spark/Hadoop2) master
 
     git clone https://github.com/qubole/rubix-admin.git
     virtualenv venv
@@ -9,21 +9,21 @@
     python setup.py install
     rubix-admin -h
     
-# Configure Admin Tool
+## Configure Admin Tool
 `rubix-admin` expects a configuration file at `~/.radminrc`. If you followed
 the instruction in the previous section, it should already be present. 
 If the configuration file does not exist, run:
 
     rubix-admin -h
     
-Edit the configuration file. 
+Edit the configuration file.
+
+## Install RubiX
+Generate a RubiX RPM by following the instructions in Qubole Rubix project.
   
-# Install Rubix
-Generate a Rubix RPM by following the instructions in Qubole Rubix project.
-  
-    rubix-admin installer install --rpm <path to rpm>
+    rubix-admin installer install --cluster-type {presto,spark} --rpm <path to rpm>
     
-# Start Rubix
+## Start RubiX
 
     rubix-admin daemon start
-    
+

@@ -17,6 +17,10 @@ class Installer:
 
         cls.install_parser = cls.sub_parser.add_parser("install",
                                                        help="Install from RPM")
+        cls.install_parser.add_argument("-t", "--cluster-type",
+                                        required=True,
+                                        choices=["presto", "spark"],
+                                        help="Cluster type")
         cls.install_parser.add_argument("-r", "--rpm", nargs='+',
                                         help="Path to RPM file(s)")
         cls.install_parser.add_argument("-a", "--rpm-args", default="--ignoreos",
@@ -28,14 +32,14 @@ class Installer:
     @classmethod
     def install_cmd(cls, args):
         logging.info("Installing packages %s" % args.rpm)
-        execute(cls.install, args, hosts=args.config["coordinator"])
-        return execute(cls.install, args, hosts=args.config["workers"])
+        execute(cls.install, args, is_master=True, hosts=args.config["coordinator"])
+        return execute(cls.install, args, is_master=False, hosts=args.config["workers"])
 
     @classmethod
-    def install(cls, args):
+    def install(cls, args, is_master):
         cls._scp(args)
         cls._rpm_install(args)
-        cls._rubix_op(args)
+        cls._rubix_op(args, is_master)
 
     @classmethod
     def get_rpm_path(cls, args):
@@ -79,19 +83,13 @@ class Installer:
                               os.path.basename(rpm))))
 
     @classmethod
-    def _rubix_op(cls, args):
-        sudo("cp -a /usr/lib/rubix/lib/* /usr/lib/presto/plugin/hive-hadoop2/")
-        sudo("cp -a /usr/lib/rubix/lib/* /usr/lib/hadoop/lib/")
-        sudo("mkdir -p /mnt/rubix/")
-        sudo("mkdir -p /var/lib/rubix/cache")
-        with settings(warn_only=True):
-          sudo("ln -s /var/lib/rubix/cache /mnt/rubix/")
-        count = 0;
-        while count < 5:
-          sudo("mkdir -p /var/lib/rubix/cache/data%s" % count)
-          count += 1
-        sudo("mkdir -p /etc/presto/conf/catalog")
+    def _rubix_op(cls, args, is_master):
+        sudo("chmod +x /usr/lib/rubix/bin/configure-*.sh")
+        sudo("/usr/lib/rubix/bin/configure-rubix.sh")
 
-        sudo("chmod +x /usr/lib/rubix/bin/configure.sh")
-        sudo("/usr/lib/rubix/bin/configure.sh")
-        sudo("restart presto-server")
+        cluster_type = args.cluster_type
+        if cluster_type == "presto":
+            sudo("/usr/lib/rubix/bin/configure-presto.sh")
+        elif cluster_type == "spark":
+            if is_master:
+                sudo("/usr/lib/rubix/bin/configure-spark.sh")
