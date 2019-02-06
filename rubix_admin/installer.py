@@ -1,6 +1,7 @@
 import logging
 
 from fabric.operations import sudo, put, os
+from fabric.context_managers import shell_env
 from fabric.contrib.files import append
 from fabric.state import env
 from fabric.tasks import execute
@@ -37,6 +38,12 @@ class Installer:
 
     @classmethod
     def install(cls, args, is_master):
+        if "HADOOP_HOME" not in os.environ:
+            abort("HADOOP_HOME must be set.")
+        elif args.cluster_type == "spark" and "SPARK_HOME" not in os.environ:
+            abort("SPARK_HOME must be set.")
+        elif args.cluster_type == "presto" and "PRESTO_HOME" not in os.environ:
+            abort("PRESTO_HOME must be set.")
         cls._scp(args)
         cls._rpm_install(args)
         cls._rubix_op(args, is_master)
@@ -84,12 +91,15 @@ class Installer:
 
     @classmethod
     def _rubix_op(cls, args, is_master):
-        sudo("chmod +x /usr/lib/rubix/bin/configure-*.sh")
-        sudo("/usr/lib/rubix/bin/configure-rubix.sh")
+        with shell_env(HADOOP_HOME=os.environ["HADOOP_HOME"]):
+            sudo("chmod +x /usr/lib/rubix/bin/configure-*.sh")
+            sudo("/usr/lib/rubix/bin/configure-rubix.sh")
 
-        cluster_type = args.cluster_type
-        if cluster_type == "presto":
-            sudo("/usr/lib/rubix/bin/configure-presto.sh")
-        elif cluster_type == "spark":
-            if is_master:
-                sudo("/usr/lib/rubix/bin/configure-spark.sh")
+            cluster_type = args.cluster_type
+            if cluster_type == "presto":
+                with shell_env(PRESTO_HOME=os.environ["PRESTO_HOME"]):
+                    sudo("/usr/lib/rubix/bin/configure-presto.sh")
+            elif cluster_type == "spark":
+                if is_master:
+                    with shell_env(SPARK_HOME=os.environ["SPARK_HOME"]):
+                        sudo("/usr/lib/rubix/bin/configure-spark.sh")

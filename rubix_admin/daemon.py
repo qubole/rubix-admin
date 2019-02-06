@@ -1,7 +1,9 @@
 import logging
 
-from fabric.operations import sudo
+from fabric.context_managers import shell_env
+from fabric.operations import sudo, os
 from fabric.tasks import execute
+from fabric.utils import abort
 
 
 class Daemon:
@@ -23,6 +25,8 @@ class Daemon:
 
     @classmethod
     def start_cmd(cls, args):
+        if "HADOOP_HOME" not in os.environ:
+            abort("HADOOP_HOME must be set.")
         logging.info("Starting bookkeeper & lds")
         execute(cls.service, "start", True, hosts=args.config["coordinator"])
         return  execute(cls.service, "start", False, hosts=args.config["workers"])
@@ -41,4 +45,5 @@ class Daemon:
 
     @classmethod
     def service(cls, action, is_master):
-        return sudo("/etc/init.d/rubix.service %s %s" % (action,is_master))
+        with shell_env(HADOOP_HOME=os.environ["HADOOP_HOME"]):
+            return sudo("/etc/init.d/rubix.service %s %s" % (action, is_master))
