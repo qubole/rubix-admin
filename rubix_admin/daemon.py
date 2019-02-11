@@ -1,10 +1,8 @@
 import logging
 
-from fabric.context_managers import shell_env
-from fabric.operations import sudo, os
-from fabric.tasks import execute
-from fabric.utils import abort
-
+import os
+from invoke import Exit
+from fabric import Connection, SerialGroup
 
 class Daemon:
     @classmethod
@@ -26,24 +24,40 @@ class Daemon:
     @classmethod
     def start_cmd(cls, args):
         if "HADOOP_HOME" not in os.environ:
-            abort("HADOOP_HOME must be set.")
+            raise Exit("HADOOP_HOME must be set.")
         logging.info("Starting bookkeeper & lds")
-        execute(cls.service, "start", True, hosts=args.config["coordinator"])
-        return  execute(cls.service, "start", False, hosts=args.config["workers"])
+        cls.execute_on_hosts(args, "start")
 
     @classmethod
     def stop_cmd(cls, args):
         logging.info("Stoping bookkeeper & lds")
-        execute(cls.service, "stop", True, hosts=args.config["coordinator"])
-        return execute(cls.service, "stop", False, hosts=args.config["workers"])
+        cls.execute_on_hosts(args, "stop")
 
     @classmethod
     def restart_cmd(cls, args):
-        logging.info("Starting bookkeeper & lds")
-        execute(cls.service, "restart", True, hosts=args.config["coordinator"])
-        return execute(cls.service, "restart", False, hosts=args.config["workers"])
+        if "HADOOP_HOME" not in os.environ:
+            raise Exit("HADOOP_HOME must be set.")
+        logging.info("Restarting bookkeeper & lds")
+        cls.execute_on_hosts(args, "restart")
 
     @classmethod
-    def service(cls, action, is_master):
-        with shell_env(HADOOP_HOME=os.environ["HADOOP_HOME"]):
-            return sudo("/etc/init.d/rubix.service %s %s" % (action, is_master))
+    def execute_on_hosts(cls, args, command):
+        coordinator = Connection(args.config["coordinator"][0])
+        cls.service(coordinator, command, True)
+
+        workers = SerialGroup(*(args.config["workers"]))
+        for host in workers:
+            cls.service(host, command, False)
+
+    @classmethod
+    def service(cls, cxn, action, is_master):
+        logging.info("Executing service command " + action)
+        cxn.sudo(cls.cmd_with_envars(["HADOOP_HOME"],
+                                     "/etc/init.d/rubix.service %s %s"
+                                     % (action, is_master)),
+                 pty=True)
+
+    @classmethod
+    def cmd_with_envars(cls, envars, command):
+        envar_prefix = " ".join(["%s=%s" % (envar, os.environ[envar]) for envar in envars])
+        return "%s %s" % (envar_prefix, command)
